@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib';
+import * as dotenv from 'dotenv';
 import 'source-map-support/register';
 import { CeleryBrokerStack } from '../lib/celery-broker-stack';
 import { DifyStack } from '../lib/dify-stack';
@@ -10,25 +11,10 @@ import { NetworkStack } from '../lib/network-stack';
 import { RedisStack } from '../lib/redis-stack';
 import { VectorStoreStack } from '../lib/vector-store-stack';
 
+dotenv.config()
+
+// initialize cdk context
 const app = new cdk.App();
-
-// new ServerlessDifyStack(app, 'ServerlessDifyStack', {
-//   /* If you don't specify 'env', this stack will be environment-agnostic.
-//    * Account/Region-dependent features and context lookups will not work,
-//    * but a single synthesized template can be deployed anywhere. */
-
-//   /* Uncomment the next line to specialize this stack for the AWS Account
-//    * and Region that are implied by the current CLI configuration. */
-//   // env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION },
-
-//   /* Uncomment the next line if you know exactly what Account and Region you
-//    * want to deploy the stack to. */
-//   // env: { account: '123456789012', region: 'us-east-1' },
-
-//   /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
-
-// });
-
 
 // create network environment 
 const network = new NetworkStack(app, "ServerlessDifyNetworkStack", {})
@@ -59,12 +45,17 @@ const dify = new DifyStack(app, "ServerlessDifyStack", {
     redis: redis.exportProps(),
     celeryBroker: celeryBroker.exportProps(),
     smtp: {
-        host: "email-smtp.us-east-1.amazonaws.com",
-        port: 587,
-        username: "xxxxxxxxxxxxxxxxxxxxx",
-        password: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-        tls: true,
-        fromEmail: ""
+        host: process.env.SMTP_SERVER_HOST || 'email-smtp.us-east-1.amazonaws.com',
+        port: process.env.SMTP_SERVER_PORT || '578',
+        username: process.env.SMTP_SERVER_USERNAME || 'admin',
+        password: process.env.SMTP_SERVER_PASSWORD || 'admin',
+        tls: process.env.SMTP_SERVER_TLS_ENABLED == 'true' ? true : false,
+        fromEmail: process.env.SMTP_SERVER_SEND_FROM || 'admin@example.com'
+    },
+    difyVersion: {
+        api: process.env.DIFY_VERSION_API || 'latest',
+        web: process.env.DIFY_VERSION_WEB || 'latest',
+        sandbox: process.env.DIFY_VERSION_SANDBOX || 'latest'
     }
 })
 

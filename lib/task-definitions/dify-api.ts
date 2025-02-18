@@ -1,6 +1,6 @@
-import { NestedStack, RemovalPolicy } from "aws-cdk-lib";
+import { Duration, NestedStack, RemovalPolicy } from "aws-cdk-lib";
 import { AppProtocol, AwsLogDriverMode, Compatibility, ContainerImage, CpuArchitecture, LogDriver, NetworkMode, OperatingSystemFamily, Protocol, Secret, TaskDefinition } from "aws-cdk-lib/aws-ecs";
-import { Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
+import { PolicyStatement, Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
 import { LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs";
 import { Construct } from "constructs";
 import { DifyTaskDefinitionStackProps } from "./props";
@@ -18,13 +18,23 @@ export class DifyApiTaskDefinitionStack extends NestedStack {
 
         const taskRole = new Role(this, 'ServerlessDifyClusterApiTaskRole', {
             assumedBy: new ServicePrincipal('ecs-tasks.amazonaws.com'),
-            managedPolicies: [{ managedPolicyArn: 'arn:aws:iam::aws:policy/AdministratorAccess' }]
         })
+        taskRole.addToPrincipalPolicy(new PolicyStatement({
+            actions: [
+                'bedrock:InvokeModel',
+                'bedrock:InvokeModelWithResponseStream',
+                'bedrock:Rerank',
+                'bedrock:Retrieve',
+                'bedrock:RetrieveAndGenerate',
+            ],
+            resources: ['*']
+        }))
+
+        props.fileStore.bucket.grantReadWrite(taskRole)
 
         this.definition = new TaskDefinition(this, 'DifyApiTaskDefinitionStack', {
             family: "serverless-dify-api",
             taskRole: taskRole,
-            executionRole: taskRole,
             compatibility: Compatibility.EC2_AND_FARGATE,
             networkMode: NetworkMode.AWS_VPC,
             runtimePlatform: {
@@ -38,7 +48,7 @@ export class DifyApiTaskDefinitionStack extends NestedStack {
         this.definition.addContainer('api', {
             containerName: "main",
             essential: true,
-            image: ContainerImage.fromRegistry("langgenius/dify-api"),
+            image: ContainerImage.fromRegistry(`langgenius/dify-api:${props.difyVersion.api}`),
             cpu: 512,
             memoryLimitMiB: 1024,
             portMappings: [
@@ -58,6 +68,13 @@ export class DifyApiTaskDefinitionStack extends NestedStack {
                     logGroupName: '/ecs/serverless-dify/api'
                 }),
             }),
+            healthCheck: {
+                command: ['CMD-SHELL', 'curl -f http://localhost:5001/health || exit 1'],
+                interval: Duration.seconds(15),
+                startPeriod: Duration.seconds(90),
+                retries: 10,
+                timeout: Duration.seconds(5)
+            },
             environment: {
 
                 "MODE": "api",
@@ -127,7 +144,7 @@ export class DifyApiTaskDefinitionStack extends NestedStack {
 
         this.definition.addContainer('sandbox', {
             containerName: "sandbox",
-            image: ContainerImage.fromRegistry("langgenius/dify-sandbox"),
+            image: ContainerImage.fromRegistry(`langgenius/dify-sandbox:${props.difyVersion.sandbox}`),
             portMappings: [
                 { containerPort: 8194, hostPort: 8194, name: "serverless-dify-sandbox-8194-tcp", appProtocol: AppProtocol.http, protocol: Protocol.TCP }
             ],
