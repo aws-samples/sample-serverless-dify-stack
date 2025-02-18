@@ -1,19 +1,37 @@
-# serverless-dify
+# sample-serverless-dify-stack
 
-Deploy a dify cluster using Amazon serverless stack.
+Deploy [dify](https://dify.ai/) cluster using Amazon serverless services with AWS CDK.
 
+![architecture](./resources/architecture.png)
+
+### Key Features
+
+1. **Simplified Container Deployment:** Leverages AWS Elastic Container Registry (ECR) as the container orchestration tool, significantly reducing the complexity and entry barrier of containerized deployment.
+
+2. **Cost-Effective Scalability:** Implements AWS Serverless technology stack to ensure economic efficiency through elastic scaling, optimizing resource utilization based on actual demand.
+
+### Requirements
+
+1. Node.js (version 14.x or later) and TypeScript/JavaScript development environment
+
+2. CDK bootstrapped in your target region, refer to [here](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html) for detailed setup instructions.
 
 ### Deploy 
 
+1. Prepare env values, copy `.env.example` to `.env` and update the env values;
+
+2. Deploy the cdk stack using following command:
 ```
-npm install aws-cdk-lib@2.150.0
 cdk deploy --region <region-code> --all --concurrency 5 --require-approval never
 ```
+3. After deploy, you can find the dify endpoint in output: 
+```
+ ✅  ServerlessDifyStack
 
-## Security
+✨  Deployment time: 435.37s
 
-See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
-
-## License
-
-This library is licensed under the MIT-0 License. See the LICENSE file.
+Outputs:
+ServerlessDifyStack.DifyEndpoint = Server-Ingre-xxxxxxx-xxxxxxx.us-east-1.elb.amazonaws.com
+Stack ARN:
+arn:aws:cloudformation:us-east-1:xxxxxxxx:stack/ServerlessDifyStack/16d8e980-ed22-11ef-b28b-xxxxxxxxxx
+```

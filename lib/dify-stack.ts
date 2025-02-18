@@ -1,4 +1,4 @@
-import { Duration, Stack, StackProps } from "aws-cdk-lib";
+import { CfnOutput, Duration, Stack, StackProps } from "aws-cdk-lib";
 import { SecurityGroup, SubnetType } from "aws-cdk-lib/aws-ec2";
 import { Cluster, FargateService } from "aws-cdk-lib/aws-ecs";
 import { ApplicationListener, ApplicationProtocol, ListenerCondition } from "aws-cdk-lib/aws-elasticloadbalancingv2";
@@ -7,7 +7,7 @@ import { Construct } from "constructs";
 import { DifyApiTaskDefinitionStack } from "./task-definitions/dify-api";
 import { DifyWebTaskDefinitionStack } from "./task-definitions/dify-web";
 import { DifyWorkerTaskDefinitionStack } from "./task-definitions/dify-worker";
-import { DifyCeleryBrokerProps, DifyFileStoreProps, DifyIngressProps, DifyMetadataStoreProps, DifyNetworkProps, DifyRedisProps, DifyTaskDefinitionStackProps, DifyVectorStorePgProps, SmtpServerProps } from "./task-definitions/props";
+import { DifyCeleryBrokerProps, DifyFileStoreProps, DifyIngressProps, DifyMetadataStoreProps, DifyNetworkProps, DifyRedisProps, DifyTaskDefinitionStackProps, DifyVectorStorePgProps, DifyVersion, SmtpServerProps } from "./task-definitions/props";
 
 export interface DifyStackProps extends StackProps {
 
@@ -25,7 +25,9 @@ export interface DifyStackProps extends StackProps {
 
     readonly vectorStore: DifyVectorStorePgProps
 
-    readonly smtp: SmtpServerProps
+    readonly smtp: SmtpServerProps,
+
+    readonly difyVersion: DifyVersion
 }
 
 export class DifyStack extends Stack {
@@ -50,12 +52,15 @@ export class DifyStack extends Stack {
             metadataStore: props.metadataStore, vectorStore: props.vectorStore,
             apiSecretKey: new Secret(this, 'ServerlessDifyApiSecretKey', { generateSecretString: { passwordLength: 32 } }),
             sandboxCodeExecutionKey: new Secret(this, 'ServerlessDifySandboxCodeExecutionKey', { generateSecretString: { passwordLength: 32 } }),
-            stmp: props.smtp
+            stmp: props.smtp,
+            difyVersion: props.difyVersion
         }
 
         this.runApiService(difyTaskDefinitionStackProps)
         this.runWorkService(difyTaskDefinitionStackProps)
         this.runWebService(difyTaskDefinitionStackProps)
+
+        new CfnOutput(this, "DifyEndpoint", { value: props.ingress.lb.loadBalancerDnsName })
     }
 
 
@@ -73,15 +78,16 @@ export class DifyStack extends Stack {
         this.listener.addTargets('DifyApiTargets', {
             priority: 50000,
             targets: [service.loadBalancerTarget({ containerName: "main" })],
-            conditions: [ListenerCondition.pathPatterns(["/console/api/*", "/api/*", "/v1/", "/files/"])],
+            conditions: [ListenerCondition.pathPatterns(["/console/api/*", "/api/*", "/v1/*", "/files/*"])],
             targetGroupName: "serverless-dify-api-tg",
             port: DifyApiTaskDefinitionStack.DIFY_API_PORT,
             protocol: ApplicationProtocol.HTTP,
             healthCheck: {
                 path: DifyApiTaskDefinitionStack.HEALTHY_ENDPOINT,
-                healthyHttpCodes: '200',
+                healthyHttpCodes: '200-400',
                 interval: Duration.seconds(30),
-                timeout: Duration.seconds(5)
+                healthyThresholdCount: 3,
+                unhealthyThresholdCount: 10
             }
         })
 

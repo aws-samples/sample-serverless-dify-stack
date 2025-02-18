@@ -18,7 +18,9 @@ export interface DifyCeleryBrokerProps { hostname: string, port: string }
 
 export interface DifyIngressProps { lb: ApplicationLoadBalancer, listener: ApplicationListener }
 
-export interface SmtpServerProps { host: string, port: number, username: string, password: string, tls: boolean, fromEmail: string }
+export interface SmtpServerProps { host: string, port: string, username: string, password: string, tls: boolean, fromEmail: string }
+
+export interface DifyVersion { api: string, web: string, sandbox: string }
 
 export interface DifyTaskDefinitionStackProps extends StackProps {
 
@@ -40,4 +42,5 @@ export interface DifyTaskDefinitionStackProps extends StackProps {
 
     stmp: SmtpServerProps
 
+    difyVersion: DifyVersion
 }
