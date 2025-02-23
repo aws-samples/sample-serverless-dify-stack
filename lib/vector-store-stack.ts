@@ -1,11 +1,15 @@
 import { RemovalPolicy, Stack, StackProps } from "aws-cdk-lib";
 import { SecurityGroup, SubnetType, Vpc } from "aws-cdk-lib/aws-ec2";
+import { Effect, PolicyStatement } from "aws-cdk-lib/aws-iam";
+import { Code, Function, Runtime } from "aws-cdk-lib/aws-lambda";
+import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import { RetentionDays } from "aws-cdk-lib/aws-logs";
 import { AuroraPostgresEngineVersion, ClusterInstance, Credentials, DatabaseCluster, DatabaseClusterEngine, SubnetGroup } from "aws-cdk-lib/aws-rds";
 import { Secret } from "aws-cdk-lib/aws-secretsmanager";
 import { AwsCustomResource, AwsCustomResourcePolicy, PhysicalResourceId } from "aws-cdk-lib/custom-resources";
 import { Construct } from "constructs";
 import { DifyVectorStorePgProps } from "./task-definitions/props";
+import path = require("path");
 
 export interface VectorStoreStackProps extends StackProps {
 
@@ -23,6 +27,8 @@ export class VectorStoreStack extends Stack {
     public readonly cluster: DatabaseCluster
 
     public readonly secret: Secret
+
+    private readonly sqlExecFunction: Function
 
     constructor(scope: Construct, id: string, props: VectorStoreStackProps) {
         super(scope, id, props)
@@ -55,10 +61,24 @@ export class VectorStoreStack extends Stack {
             serverlessV2MinCapacity: 0.5,
             serverlessV2MaxCapacity: 2,
             iamAuthentication: true,
-            enableDataApi: true,
+            // enableDataApi: true,
             credentials: Credentials.fromSecret(this.secret),
             defaultDatabaseName: VectorStoreStack.DEFAULT_DATABASE
         })
+
+        this.sqlExecFunction = new NodejsFunction(this, 'SqlExecFunction', {
+            runtime: Runtime.NODEJS_22_X,
+            handler: 'index.handler',
+            memorySize: 256,
+            environment: { SECRET_ARN: this.secret.secretArn },
+            code: Code.fromAsset(path.join(__dirname, './enable-pgvector-function/')),
+            securityGroups: [props.sg],
+            vpc: props.vpc,
+            vpcSubnets: { subnetType: SubnetType.PRIVATE_WITH_EGRESS },
+            logRetention: RetentionDays.ONE_DAY
+        })
+
+        this.secret.grantRead(this.sqlExecFunction)
 
         const query = this.enablePgvectorExtension()
         this.cluster.secret?.grantRead(query)
@@ -70,17 +90,23 @@ export class VectorStoreStack extends Stack {
     private enablePgvectorExtension() {
         const query = new AwsCustomResource(this, 'Query-EnablePgvectorExtension', {
             onCreate: {
-                service: 'RDSDataService',
-                action: 'executeStatement',
+                service: 'Lambda',
+                action: 'invoke',
                 parameters: {
-                    resourceArn: this.cluster.clusterArn,
-                    secretArn: this.cluster.secret?.secretArn,
-                    database: VectorStoreStack.DEFAULT_DATABASE,
-                    sql: 'CREATE EXTENSION IF NOT EXISTS vector;'
+                    FunctionName: this.sqlExecFunction.functionName,
+                    InvocationType: 'RequestResponse',
+                    Payload: JSON.stringify({})
                 },
-                physicalResourceId: PhysicalResourceId.of(this.cluster.clusterArn)
+                physicalResourceId: PhysicalResourceId.of('EnablePgvectorExtension')
             },
-            policy: AwsCustomResourcePolicy.fromSdkCalls({ resources: [this.cluster.clusterArn] })
+
+            policy: AwsCustomResourcePolicy.fromStatements([
+                new PolicyStatement({
+                    effect: Effect.ALLOW,
+                    actions: ['lambda:InvokeFunction'],
+                    resources: [this.sqlExecFunction.functionArn]
+                })
+            ])
         })
 
         return query

@@ -57,7 +57,7 @@ export class MetadataStoreStack extends Stack {
             serverlessV2MinCapacity: 0.5,
             serverlessV2MaxCapacity: 2,
             iamAuthentication: true,
-            enableDataApi: true,
+            // enableDataApi: true,
             credentials: Credentials.fromSecret(this.secret),
             defaultDatabaseName: MetadataStoreStack.DEFAULT_DATABASE,
         })
