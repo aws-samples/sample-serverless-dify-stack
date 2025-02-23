@@ -5,6 +5,8 @@
 *.d.ts
 node_modules
 
+!lib/enable-pgvector-function/node_modules
+
 # CDK asset staging directory
 .cdk.staging
 cdk.out
