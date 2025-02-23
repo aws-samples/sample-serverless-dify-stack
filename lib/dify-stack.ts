@@ -7,7 +7,7 @@ import { Construct } from "constructs";
 import { DifyApiTaskDefinitionStack } from "./task-definitions/dify-api";
 import { DifyWebTaskDefinitionStack } from "./task-definitions/dify-web";
 import { DifyWorkerTaskDefinitionStack } from "./task-definitions/dify-worker";
-import { DifyCeleryBrokerProps, DifyFileStoreProps, DifyIngressProps, DifyMetadataStoreProps, DifyNetworkProps, DifyRedisProps, DifyTaskDefinitionStackProps, DifyVectorStorePgProps, DifyVersion, SmtpServerProps } from "./task-definitions/props";
+import { DifyCeleryBrokerProps, DifyFileStoreProps, DifyImage, DifyIngressProps, DifyMetadataStoreProps, DifyNetworkProps, DifyRedisProps, DifyTaskDefinitionStackProps, DifyVectorStorePgProps, SmtpServerProps } from "./task-definitions/props";
 
 export interface DifyStackProps extends StackProps {
 
@@ -27,7 +27,7 @@ export interface DifyStackProps extends StackProps {
 
     readonly smtp: SmtpServerProps,
 
-    readonly difyVersion: DifyVersion
+    readonly difyImage: DifyImage
 }
 
 export class DifyStack extends Stack {
@@ -53,7 +53,7 @@ export class DifyStack extends Stack {
             apiSecretKey: new Secret(this, 'ServerlessDifyApiSecretKey', { generateSecretString: { passwordLength: 32 } }),
             sandboxCodeExecutionKey: new Secret(this, 'ServerlessDifySandboxCodeExecutionKey', { generateSecretString: { passwordLength: 32 } }),
             stmp: props.smtp,
-            difyVersion: props.difyVersion
+            difyVersion: props.difyImage
         }
 
         this.runApiService(difyTaskDefinitionStackProps)

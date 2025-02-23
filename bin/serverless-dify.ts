@@ -52,10 +52,10 @@ const dify = new DifyStack(app, "ServerlessDifyStack", {
         tls: process.env.SMTP_SERVER_TLS_ENABLED == 'true' ? true : false,
         fromEmail: process.env.SMTP_SERVER_SEND_FROM || 'admin@example.com'
     },
-    difyVersion: {
-        api: process.env.DIFY_VERSION_API || 'latest',
-        web: process.env.DIFY_VERSION_WEB || 'latest',
-        sandbox: process.env.DIFY_VERSION_SANDBOX || 'latest'
+    difyImage: {
+        api: process.env.DIFY_API_IMAGE || 'langgenius/dify-api:latest',
+        web: process.env.DIFY_WEB_IMAGE || 'langgenius/dify-web:latest',
+        sandbox: process.env.DIFY_SANDBOX_IMAGE || 'langgenius/dify-sandbox:latest'
     }
 })
 

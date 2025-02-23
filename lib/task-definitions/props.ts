@@ -20,7 +20,7 @@ export interface DifyIngressProps { lb: ApplicationLoadBalancer, listener: Appli
 
 export interface SmtpServerProps { host: string, port: string, username: string, password: string, tls: boolean, fromEmail: string }
 
-export interface DifyVersion { api: string, web: string, sandbox: string }
+export interface DifyImage { api: string, web: string, sandbox: string }
 
 export interface DifyTaskDefinitionStackProps extends StackProps {
 
@@ -42,5 +42,5 @@ export interface DifyTaskDefinitionStackProps extends StackProps {
 
     stmp: SmtpServerProps
 
-    difyVersion: DifyVersion
+    difyImage: DifyImage
 }

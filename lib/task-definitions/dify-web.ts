@@ -43,7 +43,7 @@ export class DifyWebTaskDefinitionStack extends NestedStack {
         this.definition.addContainer('web', {
             containerName: "main",
             essential: true,
-            image: ContainerImage.fromRegistry(`langgenius/dify-web:${props.difyVersion.web}`),
+            image: ContainerImage.fromRegistry(`langgenius/dify-web:${props.difyImage.web}`),
             cpu: 512,
             memoryLimitMiB: 1024,
             portMappings: [{

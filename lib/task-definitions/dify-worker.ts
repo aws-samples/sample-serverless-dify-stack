@@ -40,7 +40,7 @@ export class DifyWorkerTaskDefinitionStack extends NestedStack {
         this.definition.addContainer('worker', {
             containerName: "worker",
             essential: true,
-            image: ContainerImage.fromRegistry(`langgenius/dify-api:${props.difyVersion.api}`),
+            image: ContainerImage.fromRegistry(`langgenius/dify-api:${props.difyImage.api}`),
             command: ['worker'],
             cpu: 512,
             memoryLimitMiB: 1024,
