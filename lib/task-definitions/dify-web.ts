@@ -1,6 +1,6 @@
 import { NestedStack, RemovalPolicy } from "aws-cdk-lib";
 import { AppProtocol, AwsLogDriverMode, Compatibility, ContainerImage, CpuArchitecture, LogDriver, NetworkMode, OperatingSystemFamily, Protocol, TaskDefinition } from "aws-cdk-lib/aws-ecs";
-import { PolicyStatement, Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
+import { ManagedPolicy, PolicyStatement, Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
 import { LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs";
 import { Construct } from "constructs";
 import { DifyTaskDefinitionStackProps } from "./props";
@@ -23,7 +23,7 @@ export class DifyWebTaskDefinitionStack extends NestedStack {
             actions: ['bedrock:InvokeModel', 'bedrock:InvokeModelWithResponseStream'],
             resources: ['*']
         }))
-
+        taskRole.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('AmazonEC2ContainerRegistryPullOnly'))
         props.fileStore.bucket.grantReadWrite(taskRole)
 
         this.definition = new TaskDefinition(this, 'DifyWebTaskDefinitionStack', {

@@ -53,7 +53,7 @@ export class DifyStack extends Stack {
             apiSecretKey: new Secret(this, 'ServerlessDifyApiSecretKey', { generateSecretString: { passwordLength: 32 } }),
             sandboxCodeExecutionKey: new Secret(this, 'ServerlessDifySandboxCodeExecutionKey', { generateSecretString: { passwordLength: 32 } }),
             stmp: props.smtp,
-            difyVersion: props.difyImage
+            difyImage: props.difyImage
         }
 
         this.runApiService(difyTaskDefinitionStackProps)
