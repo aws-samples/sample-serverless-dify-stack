@@ -36,11 +36,12 @@ export class DifyApiTaskDefinitionStack extends NestedStack {
         this.definition = new TaskDefinition(this, 'DifyApiTaskDefinitionStack', {
             family: "serverless-dify-api",
             taskRole: taskRole,
+            executionRole: taskRole,
             compatibility: Compatibility.EC2_AND_FARGATE,
             networkMode: NetworkMode.AWS_VPC,
             runtimePlatform: {
                 operatingSystemFamily: OperatingSystemFamily.LINUX,
-                cpuArchitecture: CpuArchitecture.ARM64
+                cpuArchitecture: CpuArchitecture.X86_64
             },
             cpu: '1024',
             memoryMiB: '2048',
@@ -49,7 +50,7 @@ export class DifyApiTaskDefinitionStack extends NestedStack {
         this.definition.addContainer('api', {
             containerName: "main",
             essential: true,
-            image: ContainerImage.fromRegistry(`langgenius/dify-api:${props.difyImage.api}`),
+            image: ContainerImage.fromRegistry(props.difyImage.api),
             cpu: 512,
             memoryLimitMiB: 1024,
             portMappings: [
@@ -145,7 +146,7 @@ export class DifyApiTaskDefinitionStack extends NestedStack {
 
         this.definition.addContainer('sandbox', {
             containerName: "sandbox",
-            image: ContainerImage.fromRegistry(`langgenius/dify-sandbox:${props.difyImage.api}`),
+            image: ContainerImage.fromRegistry(props.difyImage.api),
             portMappings: [
                 { containerPort: 8194, hostPort: 8194, name: "serverless-dify-sandbox-8194-tcp", appProtocol: AppProtocol.http, protocol: Protocol.TCP }
             ],

@@ -34,7 +34,7 @@ export class DifyWebTaskDefinitionStack extends NestedStack {
             networkMode: NetworkMode.AWS_VPC,
             runtimePlatform: {
                 operatingSystemFamily: OperatingSystemFamily.LINUX,
-                cpuArchitecture: CpuArchitecture.ARM64
+                cpuArchitecture: CpuArchitecture.X86_64
             },
             cpu: '512',
             memoryMiB: '1024',
@@ -43,7 +43,7 @@ export class DifyWebTaskDefinitionStack extends NestedStack {
         this.definition.addContainer('web', {
             containerName: "main",
             essential: true,
-            image: ContainerImage.fromRegistry(`langgenius/dify-web:${props.difyImage.web}`),
+            image: ContainerImage.fromRegistry(props.difyImage.web),
             cpu: 512,
             memoryLimitMiB: 1024,
             portMappings: [{
