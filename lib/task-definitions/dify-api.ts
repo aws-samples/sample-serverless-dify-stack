@@ -51,8 +51,6 @@ export class DifyApiTaskDefinitionStack extends NestedStack {
             containerName: "main",
             essential: true,
             image: ContainerImage.fromRegistry(props.difyImage.api),
-            cpu: 512,
-            memoryLimitMiB: 1024,
             portMappings: [
                 {
                     containerPort: DifyApiTaskDefinitionStack.DIFY_API_PORT,
@@ -141,17 +139,14 @@ export class DifyApiTaskDefinitionStack extends NestedStack {
                 "PGVECTOR_USER": Secret.fromSecretsManager(props.vectorStore.secret, "username"),
                 "PGVECTOR_PASSWORD": Secret.fromSecretsManager(props.vectorStore.secret, "password"),
             },
-
         })
 
         this.definition.addContainer('sandbox', {
             containerName: "sandbox",
-            image: ContainerImage.fromRegistry(props.difyImage.api),
+            image: ContainerImage.fromRegistry(props.difyImage.sandbox),
             portMappings: [
                 { containerPort: 8194, hostPort: 8194, name: "serverless-dify-sandbox-8194-tcp", appProtocol: AppProtocol.http, protocol: Protocol.TCP }
             ],
-            cpu: 512,
-            memoryLimitMiB: 1024,
             logging: LogDriver.awsLogs({
                 streamPrefix: 'sandbox',
                 mode: AwsLogDriverMode.NON_BLOCKING,
@@ -164,14 +159,8 @@ export class DifyApiTaskDefinitionStack extends NestedStack {
             environment: {
                 'GIN_MODE': 'release',
                 'WORKER_TIMEOUT': '15',
-
-                "MAIL_TYPE": "smtp",
-                "SMTP_SERVER": props.stmp.host,
-                "SMTP_PORT": props.stmp.port.toString(),
-                "SMTP_USERNAME": props.stmp.username,
-                "SMTP_PASSWORD": props.stmp.password,
-                "SMTP_USE_TLS": props.stmp.tls ? "true" : "false",
-                "MAIL_FROM_ADDRESS": props.stmp.fromEmail,
+                'ENABLE_NETWORK': 'true',
+                'SANDBOX_PORT': '8194'
             },
             secrets: {
                 "API_KEY": Secret.fromSecretsManager(props.sandboxCodeExecutionKey)
