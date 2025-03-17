@@ -65,6 +65,9 @@ export class DifyWorkerTaskDefinitionStack extends NestedStack {
                 "CODE_MAX_NUMBER_ARRAY_LENGTH": "1000",
                 "CODE_MAX_NUMBER": "9223372036854775807",
 
+                "MARKETPLACE_API_URL": 'https://marketplace.dify.ai',
+                "MARKETPLACE_URL": 'https://marketplace.dify.ai',
+
                 "CELERY_BROKER_URL": "redis://" + props.celeryBroker.hostname + ":" + props.celeryBroker.port + "/0",
                 "BROKER_USE_SSL": "true",
 

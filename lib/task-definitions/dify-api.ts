@@ -89,6 +89,9 @@ export class DifyApiTaskDefinitionStack extends NestedStack {
                 "APP_API_URL": "",
                 "APP_WEB_URL": "",
 
+                "MARKETPLACE_API_URL": 'https://marketplace.dify.ai',
+                "MARKETPLACE_URL": 'https://marketplace.dify.ai',
+
                 "CODE_MIN_NUMBER": "-9223372036854775808",
                 "CODE_MAX_STRING_LENGTH": "80000",
                 "CODE_MAX_STRING_ARRAY_LENGTH": "30",

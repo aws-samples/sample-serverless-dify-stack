@@ -63,7 +63,7 @@ export class VectorStoreStack extends Stack {
             iamAuthentication: true,
             // enableDataApi: true,
             credentials: Credentials.fromSecret(this.secret),
-            defaultDatabaseName: VectorStoreStack.DEFAULT_DATABASE
+            defaultDatabaseName: VectorStoreStack.DEFAULT_DATABASE,
         })
 
         this.sqlExecFunction = new NodejsFunction(this, 'SqlExecFunction', {
@@ -71,7 +71,7 @@ export class VectorStoreStack extends Stack {
             handler: 'index.handler',
             memorySize: 256,
             environment: { SECRET_ARN: this.secret.secretArn },
-            code: Code.fromAsset(path.join(__dirname, './enable-pgvector-function/')),
+            code: Code.fromAsset(path.join(__dirname, './aurorapg-run-query/')),
             securityGroups: [props.sg],
             vpc: props.vpc,
             vpcSubnets: { subnetType: SubnetType.PRIVATE_WITH_EGRESS },
@@ -95,7 +95,7 @@ export class VectorStoreStack extends Stack {
                 parameters: {
                     FunctionName: this.sqlExecFunction.functionName,
                     InvocationType: 'RequestResponse',
-                    Payload: JSON.stringify({})
+                    Payload: JSON.stringify({ "query": "CREATE EXTENSION IF NOT EXISTS pgvector" })
                 },
                 physicalResourceId: PhysicalResourceId.of('EnablePgvectorExtension')
             },
