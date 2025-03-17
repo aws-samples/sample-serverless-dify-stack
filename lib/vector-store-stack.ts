@@ -89,7 +89,7 @@ export class VectorStoreStack extends Stack {
 
     private enablePgvectorExtension() {
         const query = new AwsCustomResource(this, 'Query-EnablePgvectorExtension', {
-            onCreate: {
+            onUpdate: {
                 service: 'Lambda',
                 action: 'invoke',
                 parameters: {
