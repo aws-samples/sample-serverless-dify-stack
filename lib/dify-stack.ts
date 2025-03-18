@@ -6,6 +6,7 @@ import { Secret } from "aws-cdk-lib/aws-secretsmanager";
 import { PrivateDnsNamespace } from "aws-cdk-lib/aws-servicediscovery";
 import { Construct } from "constructs";
 import { DifyApiTaskDefinitionStack } from "./task-definitions/dify-api";
+import { DifySandboxTaskDefinitionStack } from "./task-definitions/dify-sandbox";
 import { DifyWebTaskDefinitionStack } from "./task-definitions/dify-web";
 import { DifyWorkerTaskDefinitionStack } from "./task-definitions/dify-worker";
 import { DifyCeleryBrokerProps, DifyFileStoreProps, DifyImage, DifyIngressProps, DifyMetadataStoreProps, DifyNetworkProps, DifyRedisProps, DifyTaskDefinitionStackProps, DifyVectorStorePgProps, SmtpServerProps } from "./task-definitions/props";
@@ -34,6 +35,8 @@ export interface DifyStackProps extends StackProps {
 export class DifyStack extends Stack {
 
     static readonly DIFY_API_SERVICE_DNS_NAME = "serverless-dify-api.local"
+
+    static readonly DIFY_SANDBOX_SERVICE_DNS_NAME = "serverless-dify-sandbox.local"
 
     private readonly cluster: Cluster
 
@@ -67,6 +70,7 @@ export class DifyStack extends Stack {
             difyImage: props.difyImage
         }
 
+        this.runSandboxService(difyTaskDefinitionStackProps)
         this.runApiService(difyTaskDefinitionStackProps)
         this.runWorkService(difyTaskDefinitionStackProps)
         this.runWebService(difyTaskDefinitionStackProps)
@@ -74,6 +78,27 @@ export class DifyStack extends Stack {
         new CfnOutput(this, "DifyEndpoint", { value: props.ingress.lb.loadBalancerDnsName })
     }
 
+    runSandboxService(props: DifyTaskDefinitionStackProps) {
+        const taskDefinition = new DifySandboxTaskDefinitionStack(this, 'DifySandboxTaskDefinitionStack', props)
+        const service = new FargateService(this, 'ServerlessDifySandboxService', {
+            cluster: this.cluster,
+            taskDefinition: taskDefinition.definition,
+            desiredCount: 1,
+            serviceName: 'serverless-dify-sandbox',
+            vpcSubnets: this.cluster.vpc.selectSubnets({ subnetType: SubnetType.PRIVATE_WITH_EGRESS }),
+            securityGroups: [this.taskSecurityGroup],
+            serviceConnectConfiguration: {
+                namespace: this.serviceNamespace.namespaceName,
+                services: [{
+                    portMappingName: DifySandboxTaskDefinitionStack.SANDBOX_PORT_MAPPING_NAME,
+                    dnsName: DifyStack.DIFY_SANDBOX_SERVICE_DNS_NAME,
+                    port: DifySandboxTaskDefinitionStack.DIFY_SANDBOX_PORT,
+                }]
+            }
+        })
+
+        return service
+    }
 
     runApiService(props: DifyTaskDefinitionStackProps) {
         const taskDefinition = new DifyApiTaskDefinitionStack(this, 'DifyApiTaskDefinitionStack', props)

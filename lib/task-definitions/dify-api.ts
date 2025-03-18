@@ -3,6 +3,8 @@ import { AppProtocol, AwsLogDriverMode, Compatibility, ContainerImage, CpuArchit
 import { ManagedPolicy, PolicyStatement, Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
 import { LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs";
 import { Construct } from "constructs";
+import { DifyStack } from "../dify-stack";
+import { DifySandboxTaskDefinitionStack } from "./dify-sandbox";
 import { DifyTaskDefinitionStackProps } from "./props";
 
 export class DifyApiTaskDefinitionStack extends NestedStack {
@@ -105,7 +107,8 @@ export class DifyApiTaskDefinitionStack extends NestedStack {
                 "CODE_MAX_NUMBER_ARRAY_LENGTH": "1000",
                 "CODE_MAX_NUMBER": "9223372036854775807",
 
-                "CODE_EXECUTION_ENDPOINT": "http://localhost:8194",
+                // "CODE_EXECUTION_ENDPOINT": "http://localhost:8194",
+                "CODE_EXECUTION_ENDPOINT": `http://${DifyStack.DIFY_SANDBOX_SERVICE_DNS_NAME}:${DifySandboxTaskDefinitionStack.DIFY_SANDBOX_PORT}`,
 
                 "CELERY_BROKER_URL": "redis://" + props.celeryBroker.hostname + ":" + props.celeryBroker.port + "/0",
                 "BROKER_USE_SSL": "true",
@@ -148,32 +151,6 @@ export class DifyApiTaskDefinitionStack extends NestedStack {
                 "PGVECTOR_USER": Secret.fromSecretsManager(props.vectorStore.secret, "username"),
                 "PGVECTOR_PASSWORD": Secret.fromSecretsManager(props.vectorStore.secret, "password"),
             },
-        })
-
-        this.definition.addContainer('sandbox', {
-            containerName: "sandbox",
-            image: ContainerImage.fromRegistry(props.difyImage.sandbox),
-            portMappings: [
-                { containerPort: 8194, hostPort: 8194, name: "serverless-dify-sandbox-8194-tcp", appProtocol: AppProtocol.http, protocol: Protocol.TCP }
-            ],
-            logging: LogDriver.awsLogs({
-                streamPrefix: 'sandbox',
-                mode: AwsLogDriverMode.NON_BLOCKING,
-                logGroup: new LogGroup(this, 'DifySandboxLogGroup', {
-                    retention: RetentionDays.ONE_WEEK,
-                    removalPolicy: RemovalPolicy.DESTROY,
-                    logGroupName: '/ecs/serverless-dify/sandbox'
-                }),
-            }),
-            environment: {
-                'GIN_MODE': 'release',
-                'WORKER_TIMEOUT': '15',
-                'ENABLE_NETWORK': 'true',
-                'SANDBOX_PORT': '8194'
-            },
-            secrets: {
-                "API_KEY": Secret.fromSecretsManager(props.sandboxCodeExecutionKey)
-            }
         })
     }
 }
