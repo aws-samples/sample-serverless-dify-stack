@@ -11,6 +11,8 @@ export class DifyApiTaskDefinitionStack extends NestedStack {
 
     static readonly HEALTHY_ENDPOINT = "/health"
 
+    static readonly API_PORT_MAPPING_NAME = "serverless-dify-api-5001-tcp"
+
     public readonly definition: TaskDefinition
 
     constructor(scope: Construct, id: string, props: DifyTaskDefinitionStackProps) {
@@ -27,6 +29,10 @@ export class DifyApiTaskDefinitionStack extends NestedStack {
                 'bedrock:Retrieve',
                 'bedrock:RetrieveAndGenerate',
             ],
+            resources: ['*']
+        }))
+        taskRole.addToPolicy(new PolicyStatement({
+            actions: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents'],
             resources: ['*']
         }))
         taskRole.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('AmazonEC2ContainerRegistryPullOnly'))
@@ -55,7 +61,7 @@ export class DifyApiTaskDefinitionStack extends NestedStack {
                 {
                     containerPort: DifyApiTaskDefinitionStack.DIFY_API_PORT,
                     hostPort: DifyApiTaskDefinitionStack.DIFY_API_PORT,
-                    name: "serverless-dify-api-5001-tcp",
+                    name: DifyApiTaskDefinitionStack.API_PORT_MAPPING_NAME,
                     appProtocol: AppProtocol.http, protocol: Protocol.TCP
                 }
             ],

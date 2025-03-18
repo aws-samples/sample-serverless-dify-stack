@@ -3,6 +3,7 @@ import { SecurityGroup, SubnetType } from "aws-cdk-lib/aws-ec2";
 import { Cluster, FargateService } from "aws-cdk-lib/aws-ecs";
 import { ApplicationListener, ApplicationProtocol, ListenerCondition } from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { Secret } from "aws-cdk-lib/aws-secretsmanager";
+import { PrivateDnsNamespace } from "aws-cdk-lib/aws-servicediscovery";
 import { Construct } from "constructs";
 import { DifyApiTaskDefinitionStack } from "./task-definitions/dify-api";
 import { DifyWebTaskDefinitionStack } from "./task-definitions/dify-web";
@@ -32,7 +33,11 @@ export interface DifyStackProps extends StackProps {
 
 export class DifyStack extends Stack {
 
+    static readonly DIFY_API_SERVICE_DNS_NAME = "serverless-dify-api.local"
+
     private readonly cluster: Cluster
+
+    private readonly serviceNamespace: PrivateDnsNamespace
 
     private readonly taskSecurityGroup: SecurityGroup
 
@@ -41,7 +46,13 @@ export class DifyStack extends Stack {
     constructor(scope: Construct, id: string, props: DifyStackProps) {
         super(scope, id, props)
 
+        this.serviceNamespace = new PrivateDnsNamespace(this, 'ServleressDifyNamespace', {
+            name: 'serverless-dify.local',
+            vpc: props.network.vpc
+        })
+
         this.cluster = new Cluster(this, "ServerlessDifyEcsCluster", { vpc: props.network.vpc, enableFargateCapacityProviders: true })
+        this.cluster.node.addDependency(this.serviceNamespace)
         this.taskSecurityGroup = props.network.taskSecurityGroup
 
         this.listener = props.ingress.listener
@@ -69,10 +80,19 @@ export class DifyStack extends Stack {
         const service = new FargateService(this, 'ServerlessDifyApiService', {
             cluster: this.cluster,
             taskDefinition: taskDefinition.definition,
+            circuitBreaker: { rollback: true, enable: true },
             desiredCount: 1,
             serviceName: 'serverless-dify-api',
             vpcSubnets: this.cluster.vpc.selectSubnets({ subnetType: SubnetType.PRIVATE_WITH_EGRESS }),
             securityGroups: [this.taskSecurityGroup],
+            serviceConnectConfiguration: {
+                namespace: this.serviceNamespace.namespaceName,
+                services: [{
+                    portMappingName: DifyApiTaskDefinitionStack.API_PORT_MAPPING_NAME,
+                    dnsName: DifyStack.DIFY_API_SERVICE_DNS_NAME,
+                    port: DifyApiTaskDefinitionStack.DIFY_API_PORT,
+                }]
+            }
         })
 
         this.listener.addTargets('DifyApiTargets', {
