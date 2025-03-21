@@ -27,7 +27,6 @@ export class DifyWebTaskDefinitionStack extends NestedStack {
         props.fileStore.bucket.grantReadWrite(taskRole)
 
         this.definition = new TaskDefinition(this, 'DifyWebTaskDefinitionStack', {
-            family: "serverless-dify-web",
             taskRole: taskRole,
             executionRole: taskRole,
             compatibility: Compatibility.EC2_AND_FARGATE,

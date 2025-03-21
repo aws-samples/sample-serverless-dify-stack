@@ -1,6 +1,7 @@
 import { StackProps } from "aws-cdk-lib";
 import { SecurityGroup, Vpc } from "aws-cdk-lib/aws-ec2";
 import { ApplicationListener, ApplicationLoadBalancer } from "aws-cdk-lib/aws-elasticloadbalancingv2";
+import { Role } from "aws-cdk-lib/aws-iam";
 import { Bucket } from "aws-cdk-lib/aws-s3";
 import { Secret } from "aws-cdk-lib/aws-secretsmanager";
 
@@ -20,7 +21,7 @@ export interface DifyIngressProps { lb: ApplicationLoadBalancer, listener: Appli
 
 export interface SmtpServerProps { host: string, port: string, username: string, password: string, tls: boolean, fromEmail: string }
 
-export interface DifyImage { api: string, web: string, sandbox: string }
+export interface DifyImage { api: string, web: string, sandbox: string, pluginDaemon: string }
 
 export interface DifyTaskDefinitionStackProps extends StackProps {
 
@@ -43,4 +44,6 @@ export interface DifyTaskDefinitionStackProps extends StackProps {
     stmp: SmtpServerProps
 
     difyImage: DifyImage
+
+    difyTaskRole: Role
 }

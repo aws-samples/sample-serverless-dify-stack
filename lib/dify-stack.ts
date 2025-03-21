@@ -2,6 +2,7 @@ import { CfnOutput, Duration, Stack, StackProps } from "aws-cdk-lib";
 import { SecurityGroup, SubnetType } from "aws-cdk-lib/aws-ec2";
 import { Cluster, FargateService } from "aws-cdk-lib/aws-ecs";
 import { ApplicationListener, ApplicationProtocol, ListenerCondition } from "aws-cdk-lib/aws-elasticloadbalancingv2";
+import { ManagedPolicy, PolicyStatement, Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
 import { Secret } from "aws-cdk-lib/aws-secretsmanager";
 import { PrivateDnsNamespace } from "aws-cdk-lib/aws-servicediscovery";
 import { Construct } from "constructs";
@@ -46,9 +47,13 @@ export class DifyStack extends Stack {
 
     private readonly listener: ApplicationListener
 
+    private props: DifyStackProps
+
+
     constructor(scope: Construct, id: string, props: DifyStackProps) {
         super(scope, id, props)
 
+        this.props = props
         this.serviceNamespace = new PrivateDnsNamespace(this, 'ServleressDifyNamespace', {
             name: 'serverless-dify.local',
             vpc: props.network.vpc
@@ -67,7 +72,8 @@ export class DifyStack extends Stack {
             apiSecretKey: new Secret(this, 'ServerlessDifyApiSecretKey', { generateSecretString: { passwordLength: 32 } }),
             sandboxCodeExecutionKey: new Secret(this, 'ServerlessDifySandboxCodeExecutionKey', { generateSecretString: { passwordLength: 32 } }),
             stmp: props.smtp,
-            difyImage: props.difyImage
+            difyImage: props.difyImage,
+            difyTaskRole: this.createTaskRole()
         }
 
         this.runSandboxService(difyTaskDefinitionStackProps)
@@ -76,6 +82,27 @@ export class DifyStack extends Stack {
         this.runWebService(difyTaskDefinitionStackProps)
 
         new CfnOutput(this, "DifyEndpoint", { value: props.ingress.lb.loadBalancerDnsName })
+    }
+
+    createTaskRole() {
+        const taskRole = new Role(this, "ServerlessDifyClusterSandboxTaskRole", { assumedBy: new ServicePrincipal("ecs-tasks.amazonaws.com") });
+        taskRole.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName("AmazonEC2ContainerRegistryPullOnly"));
+        taskRole.addToPrincipalPolicy(new PolicyStatement({
+            actions: [
+                'bedrock:InvokeModel',
+                'bedrock:InvokeModelWithResponseStream',
+                'bedrock:Rerank',
+                'bedrock:Retrieve',
+                'bedrock:RetrieveAndGenerate',
+                'logs:CreateLogGroup',
+                'logs:CreateLogStream',
+                'logs:PutLogEvents'
+            ],
+            resources: ['*']
+        }))
+
+        this.props.fileStore.bucket.grantReadWrite(taskRole)
+        return taskRole
     }
 
     runSandboxService(props: DifyTaskDefinitionStackProps) {

@@ -1,6 +1,5 @@
 import { Duration, NestedStack, RemovalPolicy } from "aws-cdk-lib";
 import { AppProtocol, AwsLogDriverMode, Compatibility, ContainerImage, CpuArchitecture, LogDriver, NetworkMode, OperatingSystemFamily, Protocol, Secret, TaskDefinition } from "aws-cdk-lib/aws-ecs";
-import { ManagedPolicy, PolicyStatement, Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
 import { LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs";
 import { Construct } from "constructs";
 import { DifyStack } from "../dify-stack";
@@ -20,31 +19,9 @@ export class DifyApiTaskDefinitionStack extends NestedStack {
     constructor(scope: Construct, id: string, props: DifyTaskDefinitionStackProps) {
         super(scope, id, props);
 
-        const taskRole = new Role(this, 'ServerlessDifyClusterApiTaskRole', {
-            assumedBy: new ServicePrincipal('ecs-tasks.amazonaws.com'),
-        })
-        taskRole.addToPrincipalPolicy(new PolicyStatement({
-            actions: [
-                'bedrock:InvokeModel',
-                'bedrock:InvokeModelWithResponseStream',
-                'bedrock:Rerank',
-                'bedrock:Retrieve',
-                'bedrock:RetrieveAndGenerate',
-            ],
-            resources: ['*']
-        }))
-        taskRole.addToPolicy(new PolicyStatement({
-            actions: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents'],
-            resources: ['*']
-        }))
-        taskRole.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('AmazonEC2ContainerRegistryPullOnly'))
-
-        props.fileStore.bucket.grantReadWrite(taskRole)
-
         this.definition = new TaskDefinition(this, 'DifyApiTaskDefinitionStack', {
-            family: "serverless-dify-api",
-            taskRole: taskRole,
-            executionRole: taskRole,
+            taskRole: props.difyTaskRole,
+            executionRole: props.difyTaskRole,
             compatibility: Compatibility.EC2_AND_FARGATE,
             networkMode: NetworkMode.AWS_VPC,
             runtimePlatform: {
