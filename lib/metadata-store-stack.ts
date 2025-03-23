@@ -61,7 +61,7 @@ export class MetadataStoreStack extends Stack {
             port: MetadataStoreStack.PORT,
             subnetGroup: subnetGroup,
             clusterIdentifier: 'serverless-dify-metadata-store',
-            engine: DatabaseClusterEngine.auroraPostgres({ version: AuroraPostgresEngineVersion.VER_15_4 }),
+            engine: DatabaseClusterEngine.auroraPostgres({ version: AuroraPostgresEngineVersion.VER_16_6 }),
             writer: ClusterInstance.serverlessV2('MetadataStoreServerlessWriteInstance'),
             cloudwatchLogsRetention: RetentionDays.ONE_WEEK,
             serverlessV2MinCapacity: 0.5,
@@ -85,6 +85,7 @@ export class MetadataStoreStack extends Stack {
         })
 
         this.cluster.applyRemovalPolicy(RemovalPolicy.DESTROY)
+        this.cluster.secret?.grantRead(this.sqlExecFunction)
 
         const query = this.createDifyPluginDatabase()
         this.cluster.secret?.grantRead(query)

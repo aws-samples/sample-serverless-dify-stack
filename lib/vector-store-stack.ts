@@ -55,7 +55,7 @@ export class VectorStoreStack extends Stack {
             port: VectorStoreStack.PORT,
             subnetGroup: subnetGroup,
             clusterIdentifier: 'serverless-dify-vector-store',
-            engine: DatabaseClusterEngine.auroraPostgres({ version: AuroraPostgresEngineVersion.VER_15_6 }),
+            engine: DatabaseClusterEngine.auroraPostgres({ version: AuroraPostgresEngineVersion.VER_16_6 }),
             writer: ClusterInstance.serverlessV2("DifyVectorStore"),
             cloudwatchLogsRetention: RetentionDays.ONE_WEEK,
             serverlessV2MinCapacity: 0.5,
@@ -95,7 +95,7 @@ export class VectorStoreStack extends Stack {
                 parameters: {
                     FunctionName: this.sqlExecFunction.functionName,
                     InvocationType: 'RequestResponse',
-                    Payload: JSON.stringify({ "query": "CREATE EXTENSION IF NOT EXISTS pgvector" })
+                    Payload: JSON.stringify({ "query": "CREATE EXTENSION IF NOT EXISTS vector" })
                 },
                 physicalResourceId: PhysicalResourceId.of('EnablePgvectorExtension')
             },
