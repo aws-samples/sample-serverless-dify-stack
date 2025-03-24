@@ -1,12 +1,14 @@
-import { CfnOutput, Duration, Stack, StackProps } from "aws-cdk-lib";
+import { CfnOutput, Duration, RemovalPolicy, Stack, StackProps } from "aws-cdk-lib";
 import { SecurityGroup, SubnetType } from "aws-cdk-lib/aws-ec2";
 import { Cluster, FargateService } from "aws-cdk-lib/aws-ecs";
 import { ApplicationListener, ApplicationProtocol, ListenerCondition } from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { ManagedPolicy, PolicyStatement, Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
+import { LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs";
 import { Secret } from "aws-cdk-lib/aws-secretsmanager";
 import { PrivateDnsNamespace } from "aws-cdk-lib/aws-servicediscovery";
 import { Construct } from "constructs";
 import { DifyApiTaskDefinitionStack } from "./task-definitions/dify-api";
+import { DifyPluginDaemonTaskDefinitionStack } from "./task-definitions/dify-plugin-daemon";
 import { DifySandboxTaskDefinitionStack } from "./task-definitions/dify-sandbox";
 import { DifyWebTaskDefinitionStack } from "./task-definitions/dify-web";
 import { DifyWorkerTaskDefinitionStack } from "./task-definitions/dify-worker";
@@ -36,6 +38,8 @@ export interface DifyStackProps extends StackProps {
 export class DifyStack extends Stack {
 
     static readonly DIFY_API_SERVICE_DNS_NAME = "serverless-dify-api.local"
+
+    static readonly DIFY_PLUGIN_DAEMON_SERVICE_DNS_NAME = "serverless-dify-plugin-daemon.local"
 
     static readonly DIFY_SANDBOX_SERVICE_DNS_NAME = "serverless-dify-sandbox.local"
 
@@ -70,14 +74,18 @@ export class DifyStack extends Stack {
             celeryBroker: props.celeryBroker, redis: props.redis,
             metadataStore: props.metadataStore, vectorStore: props.vectorStore,
             apiSecretKey: new Secret(this, 'ServerlessDifyApiSecretKey', { generateSecretString: { passwordLength: 32 } }),
+            pluginInnerApiKey: new Secret(this, 'ServerlessDifyPluginInnerApiKey', { generateSecretString: { passwordLength: 32 } }),
+            pluginDaemonKey: new Secret(this, 'ServerlessDifyPluginDaemonKey', { generateSecretString: { passwordLength: 32 } }),
             sandboxCodeExecutionKey: new Secret(this, 'ServerlessDifySandboxCodeExecutionKey', { generateSecretString: { passwordLength: 32 } }),
-            stmp: props.smtp,
+            smtp: props.smtp,
             difyImage: props.difyImage,
-            difyTaskRole: this.createTaskRole()
+            difyTaskRole: this.createTaskRole(),
+            difyClusterLogGroup: new LogGroup(this, 'ServerlessDifyLogs', { retention: RetentionDays.ONE_WEEK, removalPolicy: RemovalPolicy.DESTROY })
         }
 
         this.runSandboxService(difyTaskDefinitionStackProps)
         this.runApiService(difyTaskDefinitionStackProps)
+        this.runPluginDaemonService(difyTaskDefinitionStackProps)
         this.runWorkService(difyTaskDefinitionStackProps)
         this.runWebService(difyTaskDefinitionStackProps)
 
@@ -160,6 +168,36 @@ export class DifyStack extends Stack {
                 interval: Duration.seconds(30),
                 healthyThresholdCount: 3,
                 unhealthyThresholdCount: 10
+            }
+        })
+
+        return service
+    }
+
+    runPluginDaemonService(props: DifyTaskDefinitionStackProps) {
+        const taskDefinition = new DifyPluginDaemonTaskDefinitionStack(this, 'DifyPluginDaemonTaskDefinitionStack', props)
+        const service = new FargateService(this, 'ServerlessDifyPluginDaemonService', {
+            cluster: this.cluster,
+            taskDefinition: taskDefinition.definition,
+            circuitBreaker: { rollback: true, enable: true },
+            desiredCount: 1,
+            serviceName: 'serverless-dify-plugin-daemon',
+            vpcSubnets: this.cluster.vpc.selectSubnets({ subnetType: SubnetType.PRIVATE_WITH_EGRESS }),
+            securityGroups: [this.taskSecurityGroup],
+            serviceConnectConfiguration: {
+                namespace: this.serviceNamespace.namespaceName,
+                services: [
+                    {
+                        portMappingName: DifyPluginDaemonTaskDefinitionStack.DIFY_PLUGIN_DAEMON_PORT_NAME,
+                        dnsName: DifyStack.DIFY_PLUGIN_DAEMON_SERVICE_DNS_NAME,
+                        port: DifyPluginDaemonTaskDefinitionStack.DIFY_PLUGIN_DAEMON_PORT,
+                    },
+                    {
+                        portMappingName: DifyPluginDaemonTaskDefinitionStack.DIFY_PLUGIN_DAEMON_DEBUG_PORT_NAME,
+                        dnsName: DifyStack.DIFY_PLUGIN_DAEMON_SERVICE_DNS_NAME,
+                        port: DifyPluginDaemonTaskDefinitionStack.DIFY_PLUGIN_DAEMON_DEBUG_PORT,
+                    }
+                ]
             }
         })
 

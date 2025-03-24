@@ -1,8 +1,8 @@
-import { NestedStack, RemovalPolicy } from "aws-cdk-lib";
-import { AppProtocol, AwsLogDriverMode, Compatibility, ContainerImage, CpuArchitecture, LogDriver, OperatingSystemFamily, Protocol, Secret, TaskDefinition } from "aws-cdk-lib/aws-ecs";
-import { LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs";
+import { NestedStack } from "aws-cdk-lib";
+import { AppProtocol, AwsLogDriverMode, Compatibility, ContainerImage, CpuArchitecture, LogDriver, OperatingSystemFamily, Protocol, TaskDefinition } from "aws-cdk-lib/aws-ecs";
 import { Construct } from "constructs";
 import { DifyTaskDefinitionStackProps } from "./props";
+import { TaskEnvironments } from "./task-environments";
 
 export class DifySandboxTaskDefinitionStack extends NestedStack {
 
@@ -36,19 +36,12 @@ export class DifySandboxTaskDefinitionStack extends NestedStack {
                 }
             ],
             logging: LogDriver.awsLogs({
-                streamPrefix: "serverless-dify-sandbox",
+                streamPrefix: "sandbox",
                 mode: AwsLogDriverMode.NON_BLOCKING,
-                logGroup: new LogGroup(this, 'DifySandboxLogGroup', { retention: RetentionDays.ONE_WEEK, removalPolicy: RemovalPolicy.DESTROY, logGroupName: '/ecs/serverless-dify/sandbox' })
+                logGroup: props.difyClusterLogGroup
             }),
-            environment: {
-                "GIN_MODE": "release",
-                "WORKER_TIMEOUT": "15",
-                "ENABLE_NETWORK": "true",
-                "SANDBOX_PORT": "8194"
-            },
-            secrets: {
-                "API_KEY": Secret.fromSecretsManager(props.sandboxCodeExecutionKey)
-            }
+            environment: TaskEnvironments.getSandboxEnvironment(),
+            secrets: TaskEnvironments.getSandboxSecretEnvironment(props)
         })
     }
 }

@@ -1,9 +1,9 @@
-import { NestedStack, RemovalPolicy } from "aws-cdk-lib";
+import { NestedStack } from "aws-cdk-lib";
 import { AppProtocol, AwsLogDriverMode, Compatibility, ContainerImage, CpuArchitecture, LogDriver, NetworkMode, OperatingSystemFamily, Protocol, TaskDefinition } from "aws-cdk-lib/aws-ecs";
 import { ManagedPolicy, PolicyStatement, Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
-import { LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs";
 import { Construct } from "constructs";
 import { DifyTaskDefinitionStackProps } from "./props";
+import { TaskEnvironments } from "./task-environments";
 
 export class DifyWebTaskDefinitionStack extends NestedStack {
 
@@ -54,20 +54,9 @@ export class DifyWebTaskDefinitionStack extends NestedStack {
             logging: LogDriver.awsLogs({
                 streamPrefix: 'web',
                 mode: AwsLogDriverMode.NON_BLOCKING,
-                logGroup: new LogGroup(this, "DifyWebLogGroup", {
-                    retention: RetentionDays.ONE_WEEK,
-                    removalPolicy: RemovalPolicy.DESTROY,
-                    logGroupName: '/ecs/serverless-dify/web'
-                })
+                logGroup: props.difyClusterLogGroup
             }),
-            environment: {
-                "CONSOLE_WEB_URL": "",
-                "SERVICE_API_URL": "",
-                "APP_API_URL": "",
-                "APP_WEB_URL": "",
-                "CONSOLE_API_URL": "",
-                "EDITION": "SELF_HOSTED"
-            }
+            environment: TaskEnvironments.getWebEnvironment()
         })
     }
 

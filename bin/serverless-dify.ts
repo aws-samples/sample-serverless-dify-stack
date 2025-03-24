@@ -55,7 +55,8 @@ const dify = new DifyStack(app, "ServerlessDifyStack", {
     difyImage: {
         api: process.env.DIFY_API_IMAGE || 'langgenius/dify-api:latest',
         web: process.env.DIFY_WEB_IMAGE || 'langgenius/dify-web:latest',
-        sandbox: process.env.DIFY_SANDBOX_IMAGE || 'langgenius/dify-sandbox:latest'
+        sandbox: process.env.DIFY_SANDBOX_IMAGE || 'langgenius/dify-sandbox:latest',
+        pluginDaemon: process.env.DIFY_PLUGIN_DAEMON_IMAGE || 'langgenius/dify-plugin-daemon:latest-local'
     }
 })
 

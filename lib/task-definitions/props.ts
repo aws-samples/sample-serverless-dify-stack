@@ -2,6 +2,7 @@ import { StackProps } from "aws-cdk-lib";
 import { SecurityGroup, Vpc } from "aws-cdk-lib/aws-ec2";
 import { ApplicationListener, ApplicationLoadBalancer } from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { Role } from "aws-cdk-lib/aws-iam";
+import { LogGroup } from "aws-cdk-lib/aws-logs";
 import { Bucket } from "aws-cdk-lib/aws-s3";
 import { Secret } from "aws-cdk-lib/aws-secretsmanager";
 
@@ -39,11 +40,17 @@ export interface DifyTaskDefinitionStackProps extends StackProps {
 
     apiSecretKey: Secret
 
+    pluginInnerApiKey: Secret
+
+    pluginDaemonKey: Secret
+
     sandboxCodeExecutionKey: Secret
 
-    stmp: SmtpServerProps
+    smtp: SmtpServerProps
 
     difyImage: DifyImage
 
     difyTaskRole: Role
+
+    difyClusterLogGroup: LogGroup
 }
