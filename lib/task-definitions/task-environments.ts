@@ -75,11 +75,14 @@ export class TaskEnvironments {
             WEB_API_CORS_ALLOW_ORIGINS: "*",
             CONSOLE_CORS_ALLOW_ORIGINS: "*",
 
+            AWS_REGION: region,
+
             STORAGE_TYPE: "s3",
             // S3_ENDPOINT: "",
             S3_REGION: region,
             S3_BUCKET_NAME: props.fileStore.bucket.bucketName,
             S3_USE_AWS_MANAGED_IAM: "true",
+            S3_ENDPOINT: `https://s3.${region}.amazonaws.com`,
 
             MAIL_TYPE: "smtp",
             MAIL_DEFAULT_SEND_FROM: props.smtp.fromEmail,
@@ -252,14 +255,29 @@ export class TaskEnvironments {
         const env = this.getSharedEnvironment(props, region)
         return {
             ...env,
+            GIN_MODE: 'release',
+            PLATFORM: 'local',
             DB_DATABASE: MetadataStoreStack.DEFAULT_PLUGIN_DATABASE,
             SERVER_PORT: DifyPluginDaemonTaskDefinitionStack.DIFY_PLUGIN_DAEMON_PORT.toString(),
             MAX_PLUGIN_PACKAGE_SIZE: "52428800",
+            MAX_BUNDLE_PACKAGE_SIZE: "52428800",
+
             PPROF_ENABLED: "false",
             DIFY_INNER_API_URL: `http://${DifyStack.DIFY_API_SERVICE_DNS_NAME}:${DifyApiTaskDefinitionStack.DIFY_API_PORT}`,
+            PLUGIN_REMOTE_INSTALLING_ENABLED: 'true',
             PLUGIN_REMOTE_INSTALLING_HOST: DifyStack.DIFY_PLUGIN_DAEMON_SERVICE_DNS_NAME,
             PLUGIN_REMOTE_INSTALLING_PORT: DifyPluginDaemonTaskDefinitionStack.DIFY_PLUGIN_DAEMON_DEBUG_PORT.toString(),
+            PLUGIN_STORAGE_TYPE: 'aws_s3',
+            PLUGIN_STORAGE_OSS_BUCKET: props.fileStore.bucket.bucketName,
+            PLUGIN_INSTALLED_PATH: "plugin",
             PLUGIN_WORKING_PATH: "/app/storage/cwd",
+
+            ROUTINE_POOL_SIZE: '10000',
+            LIFETIME_COLLECTION_HEARTBEAT_INTERVAL: '5',
+            LIFETIME_COLLECTION_GC_INTERVAL: '60',
+            LIFETIME_STATE_GC_INTERVAL: '300',
+            DIFY_INVOCATION_CONNECTION_IDLE_TIMEOUT: '120',
+
             FORCE_VERIFYING_SIGNATURE: "true",
             PYTHON_ENV_INIT_TIMEOUT: "120",
             PLUGIN_MAX_EXECUTION_TIMEOUT: "600",
