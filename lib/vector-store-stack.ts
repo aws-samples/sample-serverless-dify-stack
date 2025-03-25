@@ -58,7 +58,7 @@ export class VectorStoreStack extends Stack {
             engine: DatabaseClusterEngine.auroraPostgres({ version: AuroraPostgresEngineVersion.VER_16_6 }),
             writer: ClusterInstance.serverlessV2("DifyVectorStore"),
             cloudwatchLogsRetention: RetentionDays.ONE_WEEK,
-            serverlessV2MinCapacity: 0.5,
+            serverlessV2MinCapacity: 0,
             serverlessV2MaxCapacity: 2,
             iamAuthentication: true,
             // enableDataApi: true,
