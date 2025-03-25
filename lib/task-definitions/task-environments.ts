@@ -232,7 +232,10 @@ export class TaskEnvironments {
             PM2_INSTANCES: "2",
             LOOP_NODE_MAX_COUNT: "100",
             MAX_TOOLS_NUM: "10",
-            MAX_PARALLEL_LIMIT: "10"
+            MAX_PARALLEL_LIMIT: "10",
+
+            MARKETPLACE_API_URL: "https://marketplace.dify.ai",
+            MARKETPLACE_URL: "https://marketplace.dify.ai"
         }
     }
 
