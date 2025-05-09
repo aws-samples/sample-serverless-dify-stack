@@ -1,6 +1,8 @@
 # sample-serverless-dify-stack
 
-Deploy [dify](https://dify.ai/) cluster using Amazon serverless services with AWS CDK.
+This project provides an AWS CDK implementation for deploying [Dify.AI](https://dify.ai/) , an open-source LLMOps platform, in a serverless architecture on AWS.
+
+Dify.AI is a powerful tool for building AI-native applications. This serverless implementation leverages various AWS services to create a scalable, maintainable, and cost-effective deployment of Dify.AI.
 
 ![architecture](./resources/architecture.png)
 
